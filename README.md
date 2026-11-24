@@ -44,53 +44,61 @@ The current implementation treats `0` as control and `1` as patient. Sample IDs 
 
 ## Usage
 
-The scripts accept:
+Both scripts accept paths to your own input files; filenames do not need to match the examples.
+
+### Predict similar genes
 
 ```bash
-python ppi.py disease_gene_list.txt interaction_network_filtered.txt
-python gsea.py GSE25628_filtered_expression.txt GSE25628_samples.txt c2.cp.kegg.v6.2.symbols.filtered.gmt
+python ppi.py <disease_gene_file> <interaction_network_file>
 ```
 
-Outputs depend on the analysis configured in each script's `main()`. To run a complete analysis through the class interface:
+Replace the placeholders with your file paths:
 
-```python
-from ppi import PPI
-from gsea import GSEA
-
-# Predict genes using a cosine-distance threshold of 0.2.
-ppi = PPI()
-ppi.load_data("disease_gene_list.txt", "interaction_network_filtered.txt")
-nodes, embeddings = ppi.calculate_embedding()
-predicted = ppi.get_close_genes(nodes, embeddings, 0.2)
-
-# Save the prediction as a GMT-style gene set.
-with open("predicted_genes.txt", "w") as f:
-    f.write(
-        "predicted_genes\tdescription\t"
-        + "\t".join(sorted(predicted))
-        + "\n"
-    )
-
-# Calculate enrichment of the predicted gene set.
-gsea = GSEA()
-gsea.load_data(
-    "GSE25628_filtered_expression.txt",
-    "GSE25628_samples.txt",
-    "predicted_genes.txt",
-)
-print("Predicted genes:", len(predicted))
-print("Enrichment score:", gsea.get_enrichment_score("predicted_genes"))
-
-# Identify significant KEGG pathways.
-gsea.load_data(
-    "GSE25628_filtered_expression.txt",
-    "GSE25628_samples.txt",
-    "c2.cp.kegg.v6.2.symbols.filtered.gmt",
-)
-print("Significant pathways:", gsea.get_sig_sets(0.05))
+```bash
+python ppi.py data/my_disease_genes.txt data/my_interactions.txt
 ```
 
-For a separate KEGG analysis, create a fresh `GSEA()` object before loading the KEGG file to avoid retaining previously loaded gene sets.
+The disease gene file must contain one gene symbol per line. The interaction file must contain whitespace-separated gene pairs; a third interaction-weight column is ignored.
+
+Set the cosine-distance threshold in `main()` when calling `get_close_genes()`.
+
+**When using a different interaction network, remove or rename `node2vec_pretrained` before running the script** so embeddings are trained on your new network.
+
+### Analyze gene set enrichment
+
+```bash
+python gsea.py <expression_file> <sample_assignment_file> <gene_set_file>
+```
+
+For example:
+
+```bash
+python gsea.py data/my_expression.txt data/my_samples.txt data/my_pathways.gmt
+```
+
+The expression file must be tab-delimited, with a `SYMBOL` column containing gene names and one column per sample. Expression values must already be log2-normalized.
+
+The sample assignment file must have two tab-delimited columns without a header: sample ID and group label. The current code treats `0` as control and `1` as patient. Sample IDs must match the expression column names.
+
+The gene set file must use GMT format: one pathway per line, with the pathway name, description, and gene symbols separated by tabs.
+
+Gene identifiers must be consistent across the input files. Quote any file paths containing spaces. Results printed or saved depend on the analysis configured in each script's `main()`.
+
+## Outputs
+
+### PPI gene prediction
+
+- `calculate_embedding()` returns gene names and their corresponding 64-dimensional embedding vectors.
+- `get_close_genes(nodes, embeddings, threshold)` returns a set containing the known disease genes and predicted similar genes at the chosen cosine-distance threshold.
+- Training saves a `node2vec_pretrained` model cache for reuse.
+
+### Gene set enrichment
+
+- `get_gene_rank_order()` returns gene names ranked from highest to lowest patient-versus-control log2 fold-change.
+- `get_enrichment_score(geneset)` returns the enrichment score for a gene set named in your input file, rounded to two decimal places.
+- `get_sig_sets(p)` returns the names of gene sets significant at the specified Bonferroni-corrected significance level, or an empty list if none qualify.
+
+Printing results or exporting them to files is controlled by each script's `main()` function. Output filenames, prediction thresholds, and gene set names can be changed there to suit your analysis.
 
 ## Reproducibility and limitations
 
