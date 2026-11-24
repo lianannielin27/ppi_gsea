@@ -110,6 +110,6 @@ Printing results or exporting them to files is controlled by each script's `main
 
 ## Data
 
-The example expression data come from GEO study **GSE25628** (Crispi et al., 2013). The KEGG collection was supplied with the course.
+This project was developed using data from GEO study **GSE25628** (Crispi et al., 2013).
 
 Data files are not bundled by default. Obtain them from authorized sources and check redistribution permissions before sharing them.
