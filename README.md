@@ -1,4 +1,4 @@
-# Protein Interaction Analysis and Gene Set Enrichment
+# Protein Interaction and Gene Set Enrichment Analyses
 
 This repo contains python tools for predicting disease-associated genes from protein interaction networks and evaluating gene sets using gene set enrichment analysis (GSEA). Developed as a course project using endometriosis expression data.
 
